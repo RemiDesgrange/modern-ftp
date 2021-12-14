@@ -5,6 +5,7 @@ from pyftpdlib.filesystems import AbstractedFS
 
 from pathlib import Path
 import s3fs
+from .queue import Producer
 
 class S3FileSystem(AbstractedFS):
     def __init__(self, root: str, handler: FTPHandler):
@@ -46,17 +47,20 @@ class S3BackedFTPHandler(FTPHandler):
         super().__init__(*args, **kwargs)
         self.banner = "S3 backed FTP, because fuck yeah"
         self.abstracted_fs = S3FileSystem
+        self.producer = Producer("ftp")
         #TODO
         #self.authorizer = DbAuthorizer()
 
     def on_connect(self):
-        print(f"ip {self.remote_ip}:{self.remote_port} connected")
+        self.producer.send({"ip": self.remote_ip, "port": self.remote_port,
+                            "message": "connected"})
 
     def on_disconnect(self):
-        print(f"ip {self.remote_ip}:{self.remote_port} disconnected")
+        self.producer.send({"ip": self.remote_ip, "port": self.remote_port,
+                            "message": "disconnected"})
 
     def on_login(self, username):
-        print(f"User: {username} from ip {self.remote_ip}:{self.remote_port} logged")
+        self.producer.send({"user": username, "ip": self.remote_ip, "port": self.remote_port, "message": "login"})
 
     def on_logout(self, username):
         print(f"User: {username} from ip {self.remote_ip}:{self.remote_port} unlogged")
@@ -85,6 +89,7 @@ class FTPServer:
         authorizer = DummyAuthorizer()
         authorizer.add_anonymous("/tmp/test")
         self.handler.authorizer = authorizer
+        self.handler.passive_ports = range(60000, 60010)
         self.server = pyftpdlibFTPServer((address, port), self.handler)
 
     def serve(self) -> None:

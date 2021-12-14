@@ -11,6 +11,6 @@ COPY . .
 RUN pip install --user .
 ENV LOG_LEVEL=WARNING
 ENV ENV=PROD
-
-CMD ["modern_ftp"]
+RUN mkdir /tmp/test
+CMD ["ftp_server", "-h", "0.0.0.0"]
 

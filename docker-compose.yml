@@ -4,6 +4,7 @@ services:
     build: .
     ports:
       - "2323:2323"
+      - "60000-60010:60000-60010"
     environment:
       OBJECT_STORAGE_URL: "http://minio:9000"
       OBJECT_STORAGE_ACCESS_KEY: "minio"
