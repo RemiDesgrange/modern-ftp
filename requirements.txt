@@ -1,0 +1,5 @@
+boto3
+kafka-python
+pyftpdlib
+click
+s3fs

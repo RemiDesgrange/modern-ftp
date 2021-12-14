@@ -1,0 +1,52 @@
+version: '3.9'
+services:
+  ftp:
+    build: .
+    ports:
+      - "2323:2323"
+    environment:
+      OBJECT_STORAGE_URL: "http://minio:9000"
+      OBJECT_STORAGE_ACCESS_KEY: "minio"
+      OBJECT_STORAGE_SECRET_KEY: "minio123"
+      MQ_URL: "zookeeper:2181"
+      MQ_TOPIC: "ftp"
+
+  minio:
+    image: quay.io/minio/minio
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    volumes:
+      - minio:/data
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.0.0
+    user: "appuser:appuser"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - kafka:/var/lib/kafka/data
+
+
+volumes:
+  minio:
+  kafka:

@@ -1,0 +1,2 @@
+pytest
+prospector[with_mypy,with_bandit]
